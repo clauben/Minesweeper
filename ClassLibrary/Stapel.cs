@@ -10,7 +10,7 @@ namespace ClassLibrary
     {
         private Vakje<T> _top;
 
-        private bool IsLeeg()
+        public bool IsLeeg()
         {
             if (_top == null)
                 return true;

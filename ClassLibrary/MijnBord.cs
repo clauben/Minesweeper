@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -27,7 +28,7 @@ namespace ClassLibrary
 
         public bool StartSpel(bool speler)
         {
-            bool gewonnen = false;
+            bool eindeSpel = false;
             Point volgendeZet;
             Zichtbaarheid();
 
@@ -44,24 +45,33 @@ namespace ClassLibrary
                 GenereerBord(volgendeZet);
                 Doezet(volgendeZet);
             }
-            while (!Dood() || !gewonnen)
+            while (!Dood() && !Gewonnen())
             {
                 if (speler)
                 {
                     volgendeZet = spelerZet();
                     Doezet(volgendeZet);
                     Print();
-                    gewonnen = Gewonnen();
                 }
                 else
                 {
                     volgendeZet = AlgoritmeZet();
                     Doezet(volgendeZet);
-                    gewonnen = Gewonnen();
                 }
 
             }
-            return gewonnen;
+            if(Dood() && speler)
+            {
+                Console.WriteLine("Helaas, u heeft verloren!");
+                eindeSpel = Dood();
+            }
+            else
+            {
+                Console.WriteLine("Hoera, u heeft het spel gewonnen");
+                eindeSpel = Gewonnen();
+            }
+
+            return eindeSpel;
         }
 
         private bool Dood()
@@ -105,15 +115,16 @@ namespace ClassLibrary
         }
 
         private Point spelerZet()
-        {
-            Console.WriteLine("Maak een zet, typ 'u' voor undo of 'enter' om door te gaan");
+        { 
             string u = "";
             int x = 0;
             int y = 0;
 
-            while(u.Equals("u"))
+            while(u.Equals("") && !_stapel.IsLeeg())
             {
+                Console.WriteLine("Typ 'u' voor undo of 'enter' om door te gaan");
                 u = Console.ReadLine();
+                Console.WriteLine("");
                 if(u.Equals("u"))
                 {
                     Undo();
@@ -125,10 +136,12 @@ namespace ClassLibrary
                 }                
             }
 
+            Console.WriteLine("Maak een zet!");
             Console.Write("X: ");
             x = int.Parse(Console.ReadLine());
             Console.Write("Y: ");
             y = int.Parse(Console.ReadLine());
+            Console.WriteLine("");
 
             return new Point(x, y);
         }
@@ -147,13 +160,14 @@ namespace ClassLibrary
                     }
                     else
                     {
-                        x = x + "[ _ ]";
+                        x = x + "[   ]";
                     }
                 }
 
                 Console.WriteLine(x);
                 x = "";
             }
+            Console.WriteLine("");
         }
 
         public int TelMijnen(Point hier)
@@ -162,26 +176,24 @@ namespace ClassLibrary
             int y = hier.Y;
             int counter = 0;
 
-            for (int i = 0; i < x + 1; i++)
+            if (_spelbord[hier.X][hier.Y] != _mijn)
             {
-                for (int j = 0; j + 1 < y; j++)
+                for (int i = x - 1; i < x + 2; i++)
                 {
-                    if (i <= _lengte && j <= _breedte)
+                    for (int j = y - 1; j < y + 2; j++)
                     {
-                        if (i >= x - 1 && j >= y - 1)
+                        if (i < _lengte && j < _breedte && i >= 0 && j >= 0)
                         {
-                            if (hier != new Point(i,j))
+                            if (_spelbord[i][j] == _mijn)
                             {
-                                if (_spelbord[i][j] == _mijn)
-                                {
-                                    counter++;
-                                }
-                            }
+                                counter++;
+                            }                           
                         }
                     }
                 }
+                return counter;
             }
-            return counter;
+            return _mijn;
         }
 
         private void GenereerBord(Point verboden)
@@ -216,7 +228,7 @@ namespace ClassLibrary
                 }
             }
 
-            //Plaats het aantal getelde mijnen rondom het punt op het gegeven spelboardpunt
+            //Plaats het aantal getelde mijnen rondom het punt als int op het gegeven spelboardpunt
             for (int i = 0; i < _lengte; i++)
             {
                 for (int j = 0; j < _breedte; j++)
@@ -224,7 +236,6 @@ namespace ClassLibrary
                     _spelbord[i][j] = TelMijnen(new Point(i, j));
                 }
             }
-
             onthulRanden(verboden);
         }
 
@@ -249,24 +260,21 @@ namespace ClassLibrary
             int x = hier.X;
             int y = hier.Y;
 
-            for (int i = 0; i < x + 1; i++)
+            if (_spelbord[hier.X][hier.Y] != _mijn)
             {
-                for (int j = 0; j + 1 < y; j++)
+                for (int i = x - 1; i < x + 2; i++)
                 {
-                    if (i <= _lengte && j <= _breedte)
+                    for (int j = y - 1; j < y + 2; j++)
                     {
-                        if (i >= x - 1 && j >= y - 1)
+                        if (i < _lengte && j < _breedte && i >= 0 && j >= 0)
                         {
-                            if (hier != new Point(i,j))
+                            if (_spelbord[i][j] != _mijn && _zichtbaar[i][j] == false)
                             {
-                                if (_spelbord[i][j] != _mijn && _zichtbaar[i][j] == false)
-                                {
-                                    _zichtbaar[i][j] = true;
+                                _zichtbaar[i][j] = true;
 
-                                    if (_spelbord[i][j] == 0)
-                                    {
-                                        onthulRanden(new Point(i, j));
-                                    }
+                                if (_spelbord[i][j] == 0)
+                                {
+                                    onthulRanden(new Point(i, j));
                                 }
                             }
                         }
